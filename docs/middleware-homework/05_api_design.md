@@ -10,6 +10,8 @@
 | POST | `/api/sessions` | 创建客服会话 |
 | GET | `/api/sessions` | 查询会话列表 |
 | GET | `/api/sessions/{session_id}` | 查询会话详情 |
+| PATCH | `/api/sessions/{session_id}/status` | 更新会话状态 |
+| DELETE | `/api/sessions/{session_id}` | 删除会话及关联数据 |
 | POST | `/api/sessions/{session_id}/messages` | 发送用户消息并创建任务 |
 | GET | `/api/tasks/{task_id}` | 查询任务状态和结果 |
 | GET | `/api/admin/tasks` | 查询任务列表 |
@@ -133,6 +135,8 @@ curl http://localhost:8000/api/sessions/1
 
 用户发送消息。后端保存用户消息、创建任务、写入 Redis 任务状态、将任务 JSON 写入 Redis List，并立即返回 `task_id`。
 
+如果会话状态为 `CLOSED`，该接口返回 400，避免继续向已关闭会话发送消息。
+
 ### 6.2 请求参数
 
 ```json
@@ -160,19 +164,64 @@ curl -X POST http://localhost:8000/api/sessions/1/messages \
 }
 ```
 
-## 7. GET /api/tasks/{task_id}
+## 7. PATCH /api/sessions/{session_id}/status
 
 ### 7.1 说明
 
+更新会话状态，用于课堂演示中的会话管理。
+
+### 7.2 请求参数
+
+```json
+{
+  "status": "CLOSED"
+}
+```
+
+`status` 只允许 `ACTIVE` 或 `CLOSED`。
+
+### 7.3 示例请求
+
+```bash
+curl -X PATCH http://localhost:8000/api/sessions/1/status \
+  -H "Content-Type: application/json" \
+  -d "{\"status\":\"CLOSED\"}"
+```
+
+## 8. DELETE /api/sessions/{session_id}
+
+### 8.1 说明
+
+删除会话及其关联的消息、任务、工具调用日志、工单和 Redis 缓存状态。
+
+### 8.2 示例请求
+
+```bash
+curl -X DELETE http://localhost:8000/api/sessions/1
+```
+
+### 8.3 示例响应
+
+```json
+{
+  "status": "deleted",
+  "session_id": 1
+}
+```
+
+## 9. GET /api/tasks/{task_id}
+
+### 9.1 说明
+
 查询任务状态和处理结果。后端优先读取 Redis 中的任务状态，如 Redis 中无数据，则回退查询 SQLite。
 
-### 7.2 示例请求
+### 9.2 示例请求
 
 ```bash
 curl http://localhost:8000/api/tasks/9a64b2f4-32f0-4f43-89cb-b3a6e2e7c001
 ```
 
-### 7.3 示例响应
+### 9.3 示例响应
 
 ```json
 {
@@ -196,19 +245,19 @@ curl http://localhost:8000/api/tasks/9a64b2f4-32f0-4f43-89cb-b3a6e2e7c001
 }
 ```
 
-## 8. GET /api/admin/tasks
+## 10. GET /api/admin/tasks
 
-### 8.1 说明
+### 10.1 说明
 
 查询任务列表，便于课堂演示任务状态流转。
 
-### 8.2 示例请求
+### 10.2 示例请求
 
 ```bash
 curl http://localhost:8000/api/admin/tasks
 ```
 
-### 8.3 示例响应
+### 10.3 示例响应
 
 ```json
 [
@@ -224,19 +273,19 @@ curl http://localhost:8000/api/admin/tasks
 ]
 ```
 
-## 9. GET /api/admin/tool-logs
+## 11. GET /api/admin/tool-logs
 
-### 9.1 说明
+### 11.1 说明
 
 查询 MCP 工具调用日志，便于展示 Worker 调用了哪些工具。
 
-### 9.2 示例请求
+### 11.2 示例请求
 
 ```bash
 curl http://localhost:8000/api/admin/tool-logs
 ```
 
-### 9.3 示例响应
+### 11.3 示例响应
 
 ```json
 [

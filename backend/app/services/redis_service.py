@@ -31,6 +31,9 @@ class RedisService:
     def get_task_status(self, task_id: str) -> dict[str, str]:
         return self.client.hgetall(self.task_key(task_id))
 
+    def delete_task_status(self, task_id: str) -> None:
+        self.client.delete(self.task_key(task_id))
+
     def enqueue_task(self, task: dict[str, Any]) -> None:
         # Redis List is the lightweight message queue between FastAPI and Worker.
         self.client.lpush(settings.redis_task_queue, json.dumps(task, ensure_ascii=False))
@@ -38,6 +41,9 @@ class RedisService:
     def set_session_state(self, session_id: int, data: dict[str, Any]) -> None:
         normalized = {key: self._serialize(value) for key, value in data.items() if value is not None}
         self.client.hmset(self.session_key(session_id), normalized)
+
+    def delete_session_state(self, session_id: int) -> None:
+        self.client.delete(self.session_key(session_id))
 
     @staticmethod
     def _serialize(value: Any) -> str:

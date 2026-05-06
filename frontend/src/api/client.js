@@ -5,7 +5,7 @@ export const api = axios.create({
   timeout: 10000,
 })
 
-export async function createSession(title = '课堂演示会话') {
+export async function createSession(title = '新建会话') {
   const response = await api.post('/sessions', { title })
   return response.data
 }
@@ -17,6 +17,16 @@ export async function listSessions() {
 
 export async function getSession(sessionId) {
   const response = await api.get(`/sessions/${sessionId}`)
+  return response.data
+}
+
+export async function updateSessionStatus(sessionId, status) {
+  const response = await api.patch(`/sessions/${sessionId}/status`, { status })
+  return response.data
+}
+
+export async function deleteSession(sessionId) {
+  const response = await api.delete(`/sessions/${sessionId}`)
   return response.data
 }
 

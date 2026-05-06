@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db.session import get_db
 from app.models import ChatMessage, ChatSession, ChatTask, ToolCallLog
+from app.models.chat import Ticket
 from app.schemas.chat import (
     AdminTaskRead,
     MessageCreate,
@@ -13,6 +14,7 @@ from app.schemas.chat import (
     SessionCreate,
     SessionDetail,
     SessionRead,
+    SessionStatusUpdate,
     TaskRead,
     ToolCallLogRead,
 )
@@ -66,6 +68,54 @@ def get_session(session_id: int, db: Session = Depends(get_db)) -> ChatSession:
     return session
 
 
+@router.patch("/sessions/{session_id}/status", response_model=SessionRead)
+def update_session_status(session_id: int, payload: SessionStatusUpdate, db: Session = Depends(get_db)) -> ChatSession:
+    status = payload.status.upper()
+    if status not in {"ACTIVE", "CLOSED"}:
+        raise HTTPException(status_code=400, detail="Status must be ACTIVE or CLOSED")
+
+    session = db.get(ChatSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session.status = status
+    session.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(session)
+    redis_service.set_session_state(
+        session.id,
+        {
+            "session_id": session.id,
+            "last_message": session.last_message,
+            "last_task_id": "",
+            "last_task_status": status,
+            "updated_at": session.updated_at,
+        },
+    )
+    return session
+
+
+@router.delete("/sessions/{session_id}")
+def delete_session(session_id: int, db: Session = Depends(get_db)) -> dict[str, int | str]:
+    session = db.get(ChatSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    tasks = db.query(ChatTask).filter(ChatTask.session_id == session_id).all()
+    task_ids = [task.id for task in tasks]
+    for task_id in task_ids:
+        db.query(ToolCallLog).filter(ToolCallLog.task_id == task_id).delete(synchronize_session=False)
+        db.query(Ticket).filter(Ticket.task_id == task_id).delete(synchronize_session=False)
+        redis_service.delete_task_status(task_id)
+
+    db.query(ChatTask).filter(ChatTask.session_id == session_id).delete(synchronize_session=False)
+    db.query(ChatMessage).filter(ChatMessage.session_id == session_id).delete(synchronize_session=False)
+    db.delete(session)
+    db.commit()
+    redis_service.delete_session_state(session_id)
+    return {"status": "deleted", "session_id": session_id}
+
+
 @router.post("/sessions/{session_id}/messages", response_model=MessageTaskCreated)
 def send_message(session_id: int, payload: MessageCreate, db: Session = Depends(get_db)) -> MessageTaskCreated:
     content = payload.content.strip()
@@ -75,6 +125,8 @@ def send_message(session_id: int, payload: MessageCreate, db: Session = Depends(
     session = db.get(ChatSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    if session.status == "CLOSED":
+        raise HTTPException(status_code=400, detail="Session is closed")
 
     task_id = str(uuid4())
     now = datetime.utcnow()

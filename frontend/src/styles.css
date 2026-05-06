@@ -125,6 +125,8 @@ a {
 }
 
 .session-item {
+  display: grid;
+  gap: 10px;
   width: 100%;
   min-height: 76px;
   border: 1px solid #d7d0c1;
@@ -132,6 +134,7 @@ a {
   background: #fffaf0;
   padding: 12px;
   text-align: left;
+  cursor: pointer;
 }
 
 .session-item.active {
@@ -139,18 +142,43 @@ a {
   box-shadow: inset 4px 0 0 #b3482d;
 }
 
-.session-item strong,
-.session-item span {
+.session-copy {
+  min-width: 0;
+}
+
+.session-copy strong,
+.session-copy span {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.session-item span {
+.session-copy span {
   margin-top: 8px;
   color: #6f6a60;
   font-size: 13px;
+}
+
+.session-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mini-button {
+  min-height: 28px;
+  border: 1px solid #c9c0ad;
+  border-radius: 6px;
+  background: #fffdf8;
+  color: #22443e;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mini-button.danger {
+  border-color: #d6a090;
+  color: #91351e;
 }
 
 .admin-link {

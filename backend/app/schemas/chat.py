@@ -8,6 +8,10 @@ class SessionCreate(BaseModel):
     title: str | None = None
 
 
+class SessionStatusUpdate(BaseModel):
+    status: str
+
+
 class MessageCreate(BaseModel):
     content: str
 

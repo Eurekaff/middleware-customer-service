@@ -8,17 +8,26 @@
       <button class="primary-button" type="button" @click="handleCreateSession">新建会话</button>
 
       <div class="session-list">
-        <button
+        <article
           v-for="item in sessions"
           :key="item.id"
           class="session-item"
           :class="{ active: item.id === currentSession?.id }"
-          type="button"
           @click="selectSession(item.id)"
         >
-          <strong>{{ item.title }}</strong>
-          <span>{{ item.last_message || '暂无消息' }}</span>
-        </button>
+          <div class="session-copy">
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.last_message || '暂无消息' }}</span>
+          </div>
+          <div class="session-actions">
+            <button class="mini-button" type="button" @click.stop="toggleSessionStatus(item)">
+              {{ item.status === 'CLOSED' ? '恢复' : '关闭' }}
+            </button>
+            <button class="mini-button danger" type="button" @click.stop="handleDeleteSession(item)">
+              删除
+            </button>
+          </div>
+        </article>
       </div>
 
       <RouterLink class="admin-link" to="/admin">后台演示页</RouterLink>
@@ -52,9 +61,9 @@
       <form class="composer" @submit.prevent="handleSend">
         <textarea
           v-model="draft"
-          :disabled="!currentSession || sending"
+          :disabled="!currentSession || currentSession.status === 'CLOSED' || sending"
           rows="3"
-          placeholder="输入用户问题，例如：我想退款，怎么处理？"
+          :placeholder="currentSession?.status === 'CLOSED' ? '当前会话已关闭，可恢复后继续发送' : '输入用户问题，例如：我想退款，怎么处理？'"
         />
         <button class="primary-button" type="submit" :disabled="!canSend">
           {{ sending ? '发送中' : '发送' }}
@@ -69,7 +78,15 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import TaskPanel from '../components/TaskPanel.vue'
-import { createSession, getSession, getTask, listSessions, sendMessage } from '../api/client'
+import {
+  createSession,
+  deleteSession,
+  getSession,
+  getTask,
+  listSessions,
+  sendMessage,
+  updateSessionStatus,
+} from '../api/client'
 
 const sessions = ref([])
 const currentSession = ref(null)
@@ -79,7 +96,9 @@ const draft = ref('')
 const sending = ref(false)
 let pollTimer = null
 
-const canSend = computed(() => Boolean(currentSession.value && draft.value.trim() && !sending.value))
+const canSend = computed(() =>
+  Boolean(currentSession.value && currentSession.value.status !== 'CLOSED' && draft.value.trim() && !sending.value),
+)
 
 onMounted(async () => {
   await refreshAll()
@@ -97,7 +116,13 @@ onUnmounted(() => {
 async function refreshAll() {
   sessions.value = await listSessions()
   if (currentSession.value) {
-    await loadSession(currentSession.value.id)
+    const exists = sessions.value.some((session) => session.id === currentSession.value.id)
+    if (exists) {
+      await loadSession(currentSession.value.id)
+    } else {
+      currentSession.value = null
+      messages.value = []
+    }
   }
 }
 
@@ -111,6 +136,29 @@ async function selectSession(sessionId) {
   clearPolling()
   currentTask.value = null
   await loadSession(sessionId)
+}
+
+async function toggleSessionStatus(item) {
+  const nextStatus = item.status === 'CLOSED' ? 'ACTIVE' : 'CLOSED'
+  await updateSessionStatus(item.id, nextStatus)
+  await refreshAll()
+}
+
+async function handleDeleteSession(item) {
+  const confirmed = window.confirm(`确定删除会话“${item.title}”吗？相关消息、任务和工具日志都会删除。`)
+  if (!confirmed) return
+
+  const deletingCurrent = currentSession.value?.id === item.id
+  await deleteSession(item.id)
+  await refreshAll()
+  if (deletingCurrent) {
+    const next = sessions.value[0]
+    if (next) {
+      await selectSession(next.id)
+    } else {
+      await handleCreateSession()
+    }
+  }
 }
 
 async function loadSession(sessionId) {
