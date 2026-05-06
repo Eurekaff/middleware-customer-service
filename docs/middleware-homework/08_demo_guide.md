@@ -165,7 +165,15 @@ Windows 成员也可以直接使用项目根目录的一键脚本：
 powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
 ```
 
-该脚本会完成首次依赖安装并启动 Redis、后端、Worker、MCP Server 和前端。如果使用 Docker 启动 Redis：
+该脚本会完成首次依赖安装并启动 Redis、后端、Worker、MCP Server 和前端。首次创建 `.env` 时，脚本会询问是否启用阿里云百炼大模型：
+
+```text
+Enable Alibaba DashScope LLM? (y/N)
+```
+
+直接按回车表示不启用大模型，系统使用本地规则和模板，仍可完整演示。输入 `y` 后，脚本会提示输入 DashScope API Key，并自动写入 `.env`。
+
+如果使用 Docker 启动 Redis：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 -UseDockerRedis

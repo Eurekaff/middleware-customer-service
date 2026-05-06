@@ -42,6 +42,7 @@ powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
 该脚本会自动完成：
 
 - 复制 `.env.example` 为 `.env`；
+- 首次创建 `.env` 时询问是否启用阿里云百炼大模型；
 - 创建 `backend/.venv`、`worker/.venv`、`mcp_server/.venv`；
 - 安装 Python 依赖；
 - 安装前端 npm 依赖；
@@ -54,6 +55,23 @@ powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 -UseDockerRedis
 ```
+
+大模型配置是可选项。脚本提示：
+
+```text
+Enable Alibaba DashScope LLM? (y/N)
+```
+
+直接按回车会保持本地规则和模板模式，项目仍可完整运行。输入 `y` 后脚本会要求填写 DashScope API Key，并自动写入 `.env`：
+
+```env
+LLM_ENABLE=true
+LLM_API_KEY=用户输入的 Key
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+LLM_MODEL=qwen-plus
+```
+
+`.env` 已存在时，脚本不会覆盖现有配置。如需修改大模型配置，直接编辑项目根目录 `.env`。
 
 如果只想安装依赖，不启动服务：
 

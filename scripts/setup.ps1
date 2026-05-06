@@ -23,12 +23,60 @@ function Ensure-PythonVenv($ProjectDir, $RequirementsFile) {
     & $VenvPython -m pip install -r $RequirementsFile
 }
 
+function Set-EnvValue($Path, $Key, $Value) {
+    $escapedValue = $Value -replace '\$', '`$'
+    $lines = Get-Content $Path
+    $found = $false
+    $updated = foreach ($line in $lines) {
+        if ($line -match "^$Key=") {
+            $found = $true
+            "$Key=$escapedValue"
+        } else {
+            $line
+        }
+    }
+
+    if (!$found) {
+        $updated += "$Key=$escapedValue"
+    }
+
+    Set-Content -Path $Path -Value $updated -Encoding UTF8
+}
+
+function Configure-Llm($EnvPath) {
+    Write-Host ""
+    Write-Host "LLM is optional. Press Enter to keep local rule/template mode." -ForegroundColor Yellow
+    $enable = Read-Host "Enable Alibaba DashScope LLM? (y/N)"
+    if ($enable -notin @("y", "Y", "yes", "YES")) {
+        Set-EnvValue $EnvPath "LLM_ENABLE" "false"
+        Set-EnvValue $EnvPath "LLM_API_KEY" ""
+        Write-Host "LLM disabled. The project will run with local rules and templates."
+        return
+    }
+
+    $apiKey = Read-Host "Input DashScope API Key"
+    if ([string]::IsNullOrWhiteSpace($apiKey)) {
+        Set-EnvValue $EnvPath "LLM_ENABLE" "false"
+        Set-EnvValue $EnvPath "LLM_API_KEY" ""
+        Write-Host "No API Key provided. LLM disabled."
+        return
+    }
+
+    Set-EnvValue $EnvPath "LLM_ENABLE" "true"
+    Set-EnvValue $EnvPath "LLM_API_KEY" $apiKey.Trim()
+    Set-EnvValue $EnvPath "LLM_BASE_URL" "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    Set-EnvValue $EnvPath "LLM_MODEL" "qwen-plus"
+    Set-EnvValue $EnvPath "LLM_TIMEOUT_SECONDS" "20"
+    Write-Host "LLM enabled with Alibaba DashScope compatible API."
+}
+
 Step "Prepare .env"
 if (!(Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
-    Write-Host "Created .env from .env.example. Fill LLM_API_KEY only if you need real LLM calls."
+    Write-Host "Created .env from .env.example."
+    Configure-Llm (Join-Path $Root ".env")
 } else {
-    Write-Host ".env already exists, skipped."
+    Write-Host ".env already exists, skipped. Edit .env manually if you need to change LLM settings."
 }
 
 Step "Prepare Redis"
