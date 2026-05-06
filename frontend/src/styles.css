@@ -42,7 +42,7 @@ a {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 360px;
+  grid-template-columns: 320px minmax(0, 1fr) 360px;
   min-height: 100vh;
 }
 
@@ -130,25 +130,27 @@ a {
 
 .session-list {
   display: grid;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 14px;
+  margin-top: 8px;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 2px 8px 4px 2px;
 }
 
 .session-item {
   position: relative;
-  display: flex;
-  align-items: flex-start;
+  display: block;
   width: 100%;
-  min-height: 76px;
+  min-height: 118px;
   border: 1px solid #d7d0c1;
   border-radius: 8px;
-  background: #fffaf0;
-  padding: 12px 42px 12px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(255, 250, 240, 0.96)),
+    #fffaf0;
+  padding: 16px 44px 16px 16px;
   text-align: left;
   cursor: pointer;
+  box-shadow: 0 8px 18px rgba(65, 54, 35, 0.06);
   transition:
     border-color 0.18s ease,
     background-color 0.18s ease,
@@ -158,18 +160,24 @@ a {
 
 .session-item:hover {
   border-color: #a99b82;
-  background: #fffdf8;
+  background:
+    linear-gradient(180deg, #fffdf8, #fff8eb),
+    #fffdf8;
   transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(65, 54, 35, 0.08);
+  box-shadow: 0 14px 30px rgba(65, 54, 35, 0.12);
 }
 
 .session-item.active {
   border-color: #22443e;
-  box-shadow: inset 4px 0 0 #b3482d;
+  background:
+    linear-gradient(180deg, #f8fbf7, #eef6f0),
+    #edf4ef;
+  box-shadow:
+    inset 4px 0 0 #b3482d,
+    0 14px 30px rgba(34, 68, 62, 0.12);
 }
 
 .session-copy {
-  flex: 1;
   min-width: 0;
 }
 
@@ -177,20 +185,34 @@ a {
 .session-copy span {
   display: block;
   overflow: hidden;
+}
+
+.session-copy strong {
+  min-height: 42px;
+  padding-right: 4px;
+  color: #20201d;
+  font-size: 15px;
+  line-height: 1.4;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .session-copy span {
-  margin-top: 8px;
+  display: -webkit-box;
+  min-height: 40px;
+  margin-top: 14px;
   color: #6f6a60;
   font-size: 13px;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .session-actions {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
   z-index: 20;
   opacity: 0;
   transition: opacity 0.16s ease;
@@ -206,14 +228,15 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border: 0;
   border-radius: 6px;
-  background: transparent;
+  background: rgba(255, 253, 248, 0.86);
   color: #6f6a60;
   font-size: 20px;
   font-weight: 700;
+  box-shadow: 0 1px 0 rgba(65, 54, 35, 0.06);
 }
 
 .session-menu-button:hover {
