@@ -1,12 +1,8 @@
-"""FastAPI application entrypoint.
+import uvicorn
 
-Business code will be implemented in the backend stage.
-"""
-
-
-def main() -> None:
-    print("Backend skeleton is ready. Implement FastAPI app in the next stage.")
+from app.core.config import settings
+from app.main import app
 
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(app, host=settings.backend_host, port=settings.backend_port)

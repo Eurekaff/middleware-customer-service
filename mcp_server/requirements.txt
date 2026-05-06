@@ -1,1 +1,1 @@
-# Filled in during MCP implementation stage.
+mcp>=1.2.0
