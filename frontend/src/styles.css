@@ -261,6 +261,7 @@ a {
 
 .floating-menu {
   position: fixed;
+  right: auto;
   z-index: 1000;
   display: grid;
 }

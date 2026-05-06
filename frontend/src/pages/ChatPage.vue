@@ -1,5 +1,5 @@
 <template>
-  <main class="app-shell">
+  <main class="app-shell" @click="closeSessionMenu">
     <section class="sidebar">
       <div class="brand-block">
         <p class="eyebrow">Middleware Lab</p>
@@ -74,19 +74,21 @@
 
     <TaskPanel :task="currentTask" />
 
-    <div
-      v-if="openMenuSession"
-      class="session-menu floating-menu"
-      :style="{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }"
-      @click.stop
-    >
-      <button type="button" @click="toggleSessionStatus(openMenuSession)">
-        {{ openMenuSession.status === 'CLOSED' ? '恢复会话' : '关闭会话' }}
-      </button>
-      <button class="danger" type="button" @click="handleDeleteSession(openMenuSession)">
-        删除会话
-      </button>
-    </div>
+    <Teleport to="body">
+      <div
+        v-if="openMenuSession"
+        class="session-menu floating-menu"
+        :style="{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }"
+        @click.stop
+      >
+        <button type="button" @click="toggleSessionStatus(openMenuSession)">
+          {{ openMenuSession.status === 'CLOSED' ? '恢复会话' : '关闭会话' }}
+        </button>
+        <button class="danger" type="button" @click="handleDeleteSession(openMenuSession)">
+          删除会话
+        </button>
+      </div>
+    </Teleport>
   </main>
 </template>
 
