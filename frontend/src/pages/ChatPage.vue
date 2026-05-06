@@ -102,7 +102,7 @@ async function refreshAll() {
 }
 
 async function handleCreateSession() {
-  const session = await createSession(`课堂演示会话 ${new Date().toLocaleTimeString()}`)
+  const session = await createSession('新建会话')
   await refreshAll()
   await selectSession(session.id)
 }

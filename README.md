@@ -532,6 +532,8 @@ curl http://127.0.0.1:8000/api/admin/tool-logs
 | 我想退款，怎么处理？ | 售后退款问题 | SUCCESS | Worker 生成退款流程说明 |
 | 我已经反馈三次了，没人处理，我要人工客服。 | 投诉或转人工 | TRANSFERRED | Worker 创建工单 |
 | 这个产品多少钱，有哪些功能？ | 售前咨询 | SUCCESS | Worker 生成售前咨询回复 |
+| 你好 | 问候闲聊 | SUCCESS | Worker 生成接待问候 |
+| 介绍一下课程套餐 | 商品咨询 | SUCCESS | Worker 生成商品咨询回复 |
 
 联调结果：Redis 队列最终长度为 `0`，SQLite 保存了 4 条任务、8 条聊天消息和 17 条 MCP 工具调用日志。
 

@@ -91,6 +91,8 @@ def send_message(session_id: int, payload: MessageCreate, db: Session = Depends(
         updated_at=now,
     )
     session.last_message = content
+    if session.title in {"新客服会话", "新建会话"}:
+        session.title = _generate_session_title(content)
     session.updated_at = now
     db.add(task)
     db.commit()
@@ -196,3 +198,10 @@ def _task_to_read(task: ChatTask) -> TaskRead:
         created_at=task.created_at,
         updated_at=task.updated_at,
     )
+
+
+def _generate_session_title(content: str) -> str:
+    compact = " ".join(content.strip().split())
+    if not compact:
+        return "新客服会话"
+    return compact[:18] + ("..." if len(compact) > 18 else "")

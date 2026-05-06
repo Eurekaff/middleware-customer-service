@@ -53,9 +53,19 @@ a {
   padding: 24px;
 }
 
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .task-panel {
   border-right: 0;
   border-left: 1px solid #d7d0c1;
+  max-height: 100vh;
+  overflow-y: auto;
 }
 
 .brand-block h1,
@@ -109,6 +119,9 @@ a {
   display: grid;
   gap: 10px;
   margin-top: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .session-item {
@@ -143,6 +156,7 @@ a {
 .admin-link {
   width: 100%;
   margin-top: 18px;
+  flex-shrink: 0;
 }
 
 .chat-main {

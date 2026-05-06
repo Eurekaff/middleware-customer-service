@@ -9,7 +9,7 @@ except ModuleNotFoundError:
 
 
 KNOWLEDGE_BASE_PATH = Path(__file__).resolve().parents[2] / "backend" / "data" / "knowledge_base.json"
-ALLOWED_CATEGORIES = ["技术问题", "售后退款问题", "投诉或转人工", "售前咨询", "一般问题"]
+ALLOWED_CATEGORIES = ["技术问题", "售后退款问题", "投诉或转人工", "售前咨询", "商品咨询", "问候闲聊", "一般问题"]
 
 
 def classify_question_tool(question: str) -> dict[str, Any]:
@@ -158,6 +158,8 @@ def transfer_to_human_tool(question: str, category: str) -> dict[str, Any]:
 
 def _rule_classify_question(question: str) -> dict[str, str]:
     normalized = question.strip()
+    if _contains_any(normalized, ["你好", "您好", "在吗", "早上好", "下午好", "晚上好", "hello", "hi"]):
+        return {"category": "问候闲聊", "reason": "命中问候或寒暄相关关键词"}
     if _contains_any(normalized, ["人工", "投诉", "没人处理", "太差"]):
         return {"category": "投诉或转人工", "reason": "命中投诉或人工处理相关关键词"}
     if _contains_any(normalized, ["退款", "退钱", "价格", "费用"]):
@@ -166,6 +168,8 @@ def _rule_classify_question(question: str) -> dict[str, str]:
         return {"category": "技术问题", "reason": "命中技术故障相关关键词"}
     if _contains_any(normalized, ["怎么购买", "多少钱", "功能"]):
         return {"category": "售前咨询", "reason": "命中购买或功能咨询相关关键词"}
+    if _contains_any(normalized, ["商品", "产品", "课程", "服务", "套餐", "适合", "介绍"]):
+        return {"category": "商品咨询", "reason": "命中商品或课程咨询相关关键词"}
     return {"category": "一般问题", "reason": "未命中明确分类关键词"}
 
 
