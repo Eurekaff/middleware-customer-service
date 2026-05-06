@@ -2,7 +2,7 @@
 
 本项目是中间件技术课程大作业，目标是实现一个本地可运行的智能客服工作流系统，用于展示 Redis、Worker、MCP Server、SQLite 和前后端分离 Web 应用在客服任务处理链路中的作用。
 
-当前项目处于阶段开发中：文档、项目骨架、后端基础 API、MCP 工具和 Worker 已完成；Vue 前端将在后续阶段继续实现。
+当前项目处于阶段开发中：文档、项目骨架、后端基础 API、MCP 工具、Worker 和 Vue 前端已完成；后续阶段将继续做完整本地验收和实验报告材料补充。
 
 ## 1. 技术栈
 
@@ -73,12 +73,16 @@ middleware-customer-service/
 - Worker 使用 Redis `BRPOP` 消费任务；
 - Worker 调用 MCP 工具并写入工具日志；
 - Worker 写入机器人回复、工单和任务结果；
-- Worker 更新 Redis 任务状态。
+- Worker 更新 Redis 任务状态；
+- Vue 3 前端聊天页；
+- 会话列表；
+- 当前任务状态面板；
+- 后台演示页任务与 MCP 工具日志展示。
 
 待实现：
 
-- Vue 前端页面；
-- 前端完整联调。
+- 最终 README 和实验报告材料整理；
+- 完整截图和答辩材料。
 
 ## 4. 环境要求
 
@@ -315,11 +319,11 @@ PENDING
 2. 启动后端；
 3. 启动 MCP Server；
 4. 启动 Worker；
-5. 调用 API 创建会话；
-6. 调用 API 发送消息；
-7. 使用任务查询 API 验证状态变为 `SUCCESS` 或 `TRANSFERRED`。
+5. 启动前端；
+6. 在页面创建会话并发送消息；
+7. 使用任务状态面板和后台演示页验证结果。
 
-后续完整项目启动顺序会扩展为：
+完整项目启动顺序：
 
 1. 启动 Redis；
 2. 启动后端；
@@ -519,7 +523,56 @@ curl http://127.0.0.1:8000/api/admin/tool-logs
 0
 ```
 
-## 15. 关键配置
+## 15. 前端运行方式
+
+进入前端目录：
+
+```powershell
+cd frontend
+```
+
+安装依赖：
+
+```powershell
+npm install
+```
+
+启动开发服务器：
+
+```powershell
+npm run dev
+```
+
+前端默认地址：
+
+```text
+http://127.0.0.1:5173
+```
+
+页面说明：
+
+- `/`：聊天页，左侧会话列表，中间聊天窗口，右侧任务状态面板；
+- `/admin`：后台演示页，展示任务列表和 MCP 工具调用日志。
+
+前端接口配置位置：
+
+```text
+frontend/src/api/client.js
+```
+
+默认 API 地址：
+
+```text
+http://127.0.0.1:8000/api
+```
+
+生产构建验证：
+
+```powershell
+npm run build
+```
+
+## 16. 关键配置
 
 配置示例见：
 
@@ -546,7 +599,7 @@ LLM_MODEL=
 LLM_TIMEOUT_SECONDS=20
 ```
 
-## 16. 中间件技术亮点
+## 17. 中间件技术亮点
 
 本项目重点展示：
 
@@ -564,9 +617,9 @@ LLM_TIMEOUT_SECONDS=20
 用户提问 -> 后端创建任务 -> Redis 入队 -> Worker 出队 -> MCP 工具处理 -> 数据库保存 -> Redis 更新状态 -> 前端展示回复
 ```
 
-## 17. 常见问题
+## 18. 常见问题
 
-### 17.1 redis-cli 命令找不到
+### 18.1 redis-cli 命令找不到
 
 Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `redis-cli`。也可以使用完整路径：
 
@@ -574,7 +627,7 @@ Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `re
 & "C:\Program Files\Redis\redis-cli.exe" ping
 ```
 
-### 17.2 创建会话时报 Redis 连接失败
+### 18.2 创建会话时报 Redis 连接失败
 
 确认 Redis 服务是否运行：
 
@@ -588,7 +641,7 @@ Get-Service Redis
 Start-Service Redis
 ```
 
-### 17.3 任务一直是 PENDING
+### 18.3 任务一直是 PENDING
 
 通常表示 Worker 没有启动，或 Worker 没有连接到同一个 Redis 和 SQLite 数据库。正常情况下任务状态会按以下流程变化：
 
@@ -596,11 +649,26 @@ Start-Service Redis
 PENDING -> PROCESSING -> SUCCESS / FAILED / TRANSFERRED
 ```
 
-### 17.4 是否必须配置真实大模型 API
+### 18.4 是否必须配置真实大模型 API
 
 不是必须。默认 `LLM_ENABLE=false`，系统使用规则和模板实现。如果配置了 OpenAI 兼容接口，MCP 工具会使用大模型辅助问题归因、转人工判断和智能回复；如果调用失败，会自动回退到规则和模板。
 
-## 18. 三人分工建议
+### 18.5 前端页面打不开
+
+确认前端开发服务器是否启动：
+
+```powershell
+cd frontend
+npm run dev
+```
+
+然后访问：
+
+```text
+http://127.0.0.1:5173
+```
+
+## 19. 三人分工建议
 
 - 成员 A：后端、数据库、API、Redis 入队；
 - 成员 B：MCP Server、Worker、Redis 出队、工具调用日志；

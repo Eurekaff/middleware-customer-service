@@ -1,2 +1,6 @@
-// Vue application entrypoint will be implemented in the frontend stage.
-console.log("Frontend skeleton is ready.");
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import './styles.css'
+
+createApp(App).use(router).mount('#app')
