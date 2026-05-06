@@ -20,17 +20,14 @@
             <span>{{ item.last_message || '暂无消息' }}</span>
           </div>
           <div class="session-actions">
-            <button class="session-menu-button" type="button" aria-label="会话操作">
+            <button
+              class="session-menu-button"
+              type="button"
+              aria-label="会话操作"
+              @click.stop="toggleSessionMenu(item, $event)"
+            >
               ⋯
             </button>
-            <div class="session-menu">
-              <button type="button" @click.stop="toggleSessionStatus(item)">
-                {{ item.status === 'CLOSED' ? '恢复会话' : '关闭会话' }}
-              </button>
-              <button class="danger" type="button" @click.stop="handleDeleteSession(item)">
-                删除会话
-              </button>
-            </div>
           </div>
         </article>
       </div>
@@ -76,6 +73,20 @@
     </section>
 
     <TaskPanel :task="currentTask" />
+
+    <div
+      v-if="openMenuSession"
+      class="session-menu floating-menu"
+      :style="{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }"
+      @click.stop
+    >
+      <button type="button" @click="toggleSessionStatus(openMenuSession)">
+        {{ openMenuSession.status === 'CLOSED' ? '恢复会话' : '关闭会话' }}
+      </button>
+      <button class="danger" type="button" @click="handleDeleteSession(openMenuSession)">
+        删除会话
+      </button>
+    </div>
   </main>
 </template>
 
@@ -98,6 +109,8 @@ const messages = ref([])
 const currentTask = ref(null)
 const draft = ref('')
 const sending = ref(false)
+const openMenuSession = ref(null)
+const menuPosition = ref({ top: 0, left: 0 })
 let pollTimer = null
 
 const canSend = computed(() =>
@@ -138,6 +151,7 @@ async function handleCreateSession() {
 
 async function selectSession(sessionId) {
   clearPolling()
+  closeSessionMenu()
   currentTask.value = null
   await loadSession(sessionId)
 }
@@ -145,6 +159,7 @@ async function selectSession(sessionId) {
 async function toggleSessionStatus(item) {
   const nextStatus = item.status === 'CLOSED' ? 'ACTIVE' : 'CLOSED'
   await updateSessionStatus(item.id, nextStatus)
+  closeSessionMenu()
   await refreshAll()
 }
 
@@ -154,6 +169,7 @@ async function handleDeleteSession(item) {
 
   const deletingCurrent = currentSession.value?.id === item.id
   await deleteSession(item.id)
+  closeSessionMenu()
   await refreshAll()
   if (deletingCurrent) {
     const next = sessions.value[0]
@@ -163,6 +179,23 @@ async function handleDeleteSession(item) {
       await handleCreateSession()
     }
   }
+}
+
+function toggleSessionMenu(item, event) {
+  if (openMenuSession.value?.id === item.id) {
+    closeSessionMenu()
+    return
+  }
+  const rect = event.currentTarget.getBoundingClientRect()
+  openMenuSession.value = item
+  menuPosition.value = {
+    top: rect.bottom + 6,
+    left: Math.max(8, rect.right - 128),
+  }
+}
+
+function closeSessionMenu() {
+  openMenuSession.value = null
 }
 
 async function loadSession(sessionId) {

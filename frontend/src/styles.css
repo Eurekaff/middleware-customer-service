@@ -139,7 +139,8 @@ a {
 
 .session-item {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: flex-start;
   width: 100%;
   min-height: 76px;
   border: 1px solid #d7d0c1;
@@ -168,6 +169,7 @@ a {
 }
 
 .session-copy {
+  flex: 1;
   min-width: 0;
 }
 
@@ -233,11 +235,6 @@ a {
   padding: 6px;
 }
 
-.session-actions:hover .session-menu,
-.session-actions:focus-within .session-menu {
-  display: grid;
-}
-
 .session-menu button {
   width: 100%;
   min-height: 32px;
@@ -260,6 +257,12 @@ a {
 
 .session-menu .danger:hover {
   background: #f7e5df;
+}
+
+.floating-menu {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
 }
 
 .admin-link {
