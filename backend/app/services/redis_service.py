@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from itertools import islice
 from typing import Any
 
 import redis
@@ -33,6 +34,22 @@ class RedisService:
 
     def delete_task_status(self, task_id: str) -> None:
         self.client.delete(self.task_key(task_id))
+
+    def queue_length(self) -> int:
+        return self.client.llen(settings.redis_task_queue)
+
+    def queue_preview(self, limit: int = 5) -> list[dict[str, Any]]:
+        items = self.client.lrange(settings.redis_task_queue, 0, limit - 1)
+        preview = []
+        for item in items:
+            try:
+                preview.append(json.loads(item))
+            except json.JSONDecodeError:
+                preview.append({"raw": item})
+        return preview
+
+    def recent_keys(self, pattern: str, limit: int = 8) -> list[str]:
+        return list(islice(self.client.scan_iter(pattern), limit))
 
     def enqueue_task(self, task: dict[str, Any]) -> None:
         # Redis List is the lightweight message queue between FastAPI and Worker.

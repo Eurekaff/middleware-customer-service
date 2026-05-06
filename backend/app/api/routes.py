@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.models import ChatMessage, ChatSession, ChatTask, ToolCallLog
 from app.models.chat import Ticket
@@ -233,6 +234,53 @@ def list_tasks(db: Session = Depends(get_db)) -> list[AdminTaskRead]:
 @router.get("/admin/tool-logs", response_model=list[ToolCallLogRead])
 def list_tool_logs(db: Session = Depends(get_db)) -> list[ToolCallLog]:
     return db.query(ToolCallLog).order_by(ToolCallLog.created_at.desc()).all()
+
+
+@router.get("/admin/middleware-status")
+def get_middleware_status(db: Session = Depends(get_db)) -> dict:
+    redis_ok = True
+    redis_error = ""
+    queue_length = 0
+    queue_preview = []
+    task_cache_keys = []
+    session_cache_keys = []
+
+    try:
+        redis_service.client.ping()
+        queue_length = redis_service.queue_length()
+        queue_preview = redis_service.queue_preview()
+        task_cache_keys = redis_service.recent_keys(f"{settings.redis_key_prefix}:task:*")
+        session_cache_keys = redis_service.recent_keys(f"{settings.redis_key_prefix}:session:*")
+    except Exception as exc:  # pragma: no cover - demo endpoint should report Redis failures.
+        redis_ok = False
+        redis_error = str(exc)
+
+    return {
+        "redis": {
+            "connected": redis_ok,
+            "error": redis_error,
+            "queue_name": settings.redis_task_queue,
+            "queue_length": queue_length,
+            "queue_preview": queue_preview,
+            "task_cache_keys": task_cache_keys,
+            "session_cache_keys": session_cache_keys,
+        },
+        "sqlite": {
+            "sessions": db.query(ChatSession).count(),
+            "messages": db.query(ChatMessage).count(),
+            "tasks": db.query(ChatTask).count(),
+            "tool_logs": db.query(ToolCallLog).count(),
+            "tickets": db.query(Ticket).count(),
+        },
+        "workflow": [
+            "FastAPI 保存用户消息并创建 PENDING 任务",
+            "Redis List 保存待处理任务",
+            "Worker 使用 BRPOP 阻塞消费任务",
+            "Worker 调用 MCP 工具完成分类、检索、回复和转人工判断",
+            "SQLite 持久化消息、任务、工单和工具调用日志",
+            "Redis Hash 缓存任务状态，前端轮询展示处理结果",
+        ],
+    }
 
 
 def _task_to_read(task: ChatTask) -> TaskRead:

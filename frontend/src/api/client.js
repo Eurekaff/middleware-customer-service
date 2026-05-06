@@ -49,3 +49,8 @@ export async function listToolLogs() {
   const response = await api.get('/admin/tool-logs')
   return response.data
 }
+
+export async function getMiddlewareStatus() {
+  const response = await api.get('/admin/middleware-status')
+  return response.data
+}
