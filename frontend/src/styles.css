@@ -100,6 +100,12 @@ a {
   padding: 0 14px;
   text-decoration: none;
   font-weight: 700;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .primary-button {
@@ -115,6 +121,13 @@ a {
   color: #22443e;
 }
 
+.primary-button:hover:not(:disabled),
+.ghost-button:hover,
+.admin-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(34, 68, 62, 0.14);
+}
+
 .session-list {
   display: grid;
   gap: 10px;
@@ -126,6 +139,8 @@ a {
 
 .session-item {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 10px;
   width: 100%;
   min-height: 76px;
@@ -135,6 +150,18 @@ a {
   padding: 12px;
   text-align: left;
   cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.session-item:hover {
+  border-color: #a99b82;
+  background: #fffdf8;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(65, 54, 35, 0.08);
 }
 
 .session-item.active {
@@ -161,24 +188,77 @@ a {
 }
 
 .session-actions {
-  display: flex;
-  gap: 8px;
+  position: relative;
+  opacity: 0;
+  transition: opacity 0.16s ease;
 }
 
-.mini-button {
-  min-height: 28px;
-  border: 1px solid #c9c0ad;
+.session-item:hover .session-actions,
+.session-item:focus-within .session-actions,
+.session-item.active .session-actions {
+  opacity: 1;
+}
+
+.session-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
   border-radius: 6px;
-  background: #fffdf8;
-  color: #22443e;
-  padding: 0 8px;
-  font-size: 12px;
+  background: transparent;
+  color: #6f6a60;
+  font-size: 20px;
   font-weight: 700;
 }
 
-.mini-button.danger {
-  border-color: #d6a090;
+.session-menu-button:hover {
+  background: #eee7da;
+  color: #20201d;
+}
+
+.session-menu {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  z-index: 10;
+  display: none;
+  min-width: 116px;
+  border: 1px solid #d7d0c1;
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: 0 16px 34px rgba(37, 40, 35, 0.14);
+  padding: 6px;
+}
+
+.session-actions:hover .session-menu,
+.session-actions:focus-within .session-menu {
+  display: grid;
+}
+
+.session-menu button {
+  width: 100%;
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #20201d;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 13px;
+}
+
+.session-menu button:hover {
+  background: #f1eadc;
+}
+
+.session-menu .danger {
   color: #91351e;
+}
+
+.session-menu .danger:hover {
+  background: #f7e5df;
 }
 
 .admin-link {
@@ -223,6 +303,14 @@ a {
   border-radius: 8px;
   padding: 14px 16px;
   background: #fffaf0;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.message:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(65, 54, 35, 0.08);
 }
 
 .message-user {

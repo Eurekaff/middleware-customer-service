@@ -20,12 +20,17 @@
             <span>{{ item.last_message || '暂无消息' }}</span>
           </div>
           <div class="session-actions">
-            <button class="mini-button" type="button" @click.stop="toggleSessionStatus(item)">
-              {{ item.status === 'CLOSED' ? '恢复' : '关闭' }}
+            <button class="session-menu-button" type="button" aria-label="会话操作">
+              ⋯
             </button>
-            <button class="mini-button danger" type="button" @click.stop="handleDeleteSession(item)">
-              删除
-            </button>
+            <div class="session-menu">
+              <button type="button" @click.stop="toggleSessionStatus(item)">
+                {{ item.status === 'CLOSED' ? '恢复会话' : '关闭会话' }}
+              </button>
+              <button class="danger" type="button" @click.stop="handleDeleteSession(item)">
+                删除会话
+              </button>
+            </div>
           </div>
         </article>
       </div>
@@ -52,9 +57,8 @@
           class="message"
           :class="message.role === 'USER' ? 'message-user' : 'message-assistant'"
         >
-          <span>{{ message.role === 'USER' ? '用户' : '机器人' }}</span>
+          <span>{{ message.role === 'USER' ? '用户' : '智能客服' }}</span>
           <p>{{ message.content }}</p>
-          <small v-if="message.task_id" class="mono">task: {{ message.task_id }}</small>
         </article>
       </div>
 

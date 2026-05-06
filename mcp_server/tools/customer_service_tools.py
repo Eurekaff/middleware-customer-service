@@ -9,7 +9,7 @@ except ModuleNotFoundError:
 
 
 KNOWLEDGE_BASE_PATH = Path(__file__).resolve().parents[2] / "backend" / "data" / "knowledge_base.json"
-ALLOWED_CATEGORIES = ["技术问题", "售后退款问题", "投诉或转人工", "售前咨询", "商品咨询", "问候闲聊", "一般问题"]
+ALLOWED_CATEGORIES = ["技术问题", "售后退款问题", "投诉或转人工", "售前咨询", "商品咨询", "问候闲聊", "无效输入", "一般问题"]
 
 
 def classify_question_tool(question: str) -> dict[str, Any]:
@@ -158,6 +158,8 @@ def transfer_to_human_tool(question: str, category: str) -> dict[str, Any]:
 
 def _rule_classify_question(question: str) -> dict[str, str]:
     normalized = question.strip()
+    if _is_invalid_input(normalized):
+        return {"category": "无效输入", "reason": "用户输入过短或缺少可识别的咨询内容"}
     if _contains_any(normalized, ["你好", "您好", "在吗", "早上好", "下午好", "晚上好", "hello", "hi"]):
         return {"category": "问候闲聊", "reason": "命中问候或寒暄相关关键词"}
     if _contains_any(normalized, ["人工", "投诉", "没人处理", "太差"]):
@@ -184,6 +186,8 @@ def _rule_generate_reply(question: str, category: str, knowledge_hits: list[dict
 
     if category == "投诉或转人工":
         reply += " 当前问题建议转人工客服继续跟进。"
+    if category == "无效输入":
+        reply = "您好，我暂时无法从这条内容中判断您的需求。请补充具体问题，例如课程打不开、退款流程、产品功能或购买方式。"
 
     return {
         "reply": reply,
@@ -213,3 +217,13 @@ def _public_knowledge_item(item: dict[str, Any]) -> dict[str, Any]:
 
 def _contains_any(text: str, keywords: list[str]) -> bool:
     return any(keyword in text for keyword in keywords)
+
+
+def _is_invalid_input(text: str) -> bool:
+    if not text:
+        return True
+    if text.isdigit():
+        return True
+    if len(text) <= 2 and not _contains_any(text.lower(), ["hi", "你好"]):
+        return True
+    return False
