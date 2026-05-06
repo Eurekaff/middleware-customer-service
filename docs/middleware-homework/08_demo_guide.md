@@ -159,6 +159,24 @@ http://127.0.0.1:5173
 4. 启动 Worker；
 5. 启动前端 Vue。
 
+Windows 成员也可以直接使用项目根目录的一键脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
+```
+
+该脚本会完成首次依赖安装并启动 Redis、后端、Worker、MCP Server 和前端。如果使用 Docker 启动 Redis：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 -UseDockerRedis
+```
+
+停止脚本启动的服务：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\stop.ps1
+```
+
 ## 8. 演示步骤
 
 1. 打开前端页面；

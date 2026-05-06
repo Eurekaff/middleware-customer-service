@@ -31,13 +31,68 @@
 - MCP Server
 - Python MCP SDK
 
-## 2. 项目目录
+## 2. 一键配置与启动
+
+Windows 成员推荐使用项目内置 PowerShell 脚本。首次拉取代码后，在项目根目录执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
+```
+
+该脚本会自动完成：
+
+- 复制 `.env.example` 为 `.env`；
+- 创建 `backend/.venv`、`worker/.venv`、`mcp_server/.venv`；
+- 安装 Python 依赖；
+- 安装前端 npm 依赖；
+- 检查并启动 Redis；
+- 启动后端、Worker、MCP Server 和前端；
+- 在项目根目录生成 `run-*.log` 日志文件。
+
+如果本机没有 Windows Redis 服务，但已安装 Docker Desktop，可以执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1 -UseDockerRedis
+```
+
+如果只想安装依赖，不启动服务：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+```
+
+如果依赖已经安装，只启动服务：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\start.ps1
+```
+
+停止由脚本启动的服务：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\stop.ps1
+```
+
+启动成功后访问：
+
+```text
+聊天页：http://127.0.0.1:5173
+后台页：http://127.0.0.1:5173/admin
+后端健康检查：http://127.0.0.1:8000/api/health
+```
+
+## 3. 项目目录
 
 ```text
 middleware-customer-service/
 ├── README.md
 ├── .env.example
 ├── docker-compose.yml
+├── scripts/
+│   ├── setup.ps1
+│   ├── start.ps1
+│   ├── stop.ps1
+│   └── dev.ps1
 ├── docs/
 │   └── middleware-homework/
 ├── backend/
@@ -50,7 +105,7 @@ middleware-customer-service/
 └── frontend/
 ```
 
-## 3. 当前已实现功能
+## 4. 当前已实现功能
 
 已实现：
 
@@ -87,7 +142,7 @@ middleware-customer-service/
 - 答辩 PPT；
 - 实验报告正文排版。
 
-## 4. 环境要求
+## 5. 环境要求
 
 建议版本：
 
@@ -103,7 +158,7 @@ middleware-customer-service/
 - Redis 服务端口：`6379`；
 - 后端端口：`8000`。
 
-## 5. Redis 安装与启动
+## 6. Redis 安装与启动
 
 ### 5.1 Windows 使用 winget 安装
 
@@ -169,7 +224,7 @@ docker compose ps
 redis-cli ping
 ```
 
-## 6. 后端运行方式
+## 7. 后端运行方式
 
 进入后端目录：
 
@@ -215,7 +270,7 @@ backend/app.db
 
 该数据库文件是本地运行产物，不需要提交。
 
-## 7. 后端 API 验证
+## 8. 后端 API 验证
 
 ### 7.1 健康检查
 
@@ -275,7 +330,7 @@ SUCCESS / FAILED / TRANSFERRED
 
 其中 `SUCCESS` 表示智能客服已生成回复，`TRANSFERRED` 表示系统判断需要人工处理并创建工单，`FAILED` 表示 Worker 处理异常。
 
-## 8. Redis 队列验证
+## 9. Redis 队列验证
 
 发送消息后，可以检查 Redis 队列长度。若 Worker 尚未消费，队列长度会增加；若 Worker 已处理完成，队列长度通常会回到 `0`：
 
@@ -322,7 +377,7 @@ PENDING
 & "C:\Program Files\Redis\redis-cli.exe" FLUSHDB
 ```
 
-## 9. 当前完整启动顺序
+## 10. 当前完整启动顺序
 
 完整项目启动顺序：
 
@@ -332,7 +387,7 @@ PENDING
 4. 启动 Worker；
 5. 启动前端。
 
-## 10. MCP Server 运行方式
+## 11. MCP Server 运行方式
 
 进入 MCP Server 目录：
 
@@ -376,7 +431,7 @@ python server.py
 - `create_ticket`
 - `transfer_to_human`
 
-## 11. Worker 运行方式
+## 12. Worker 运行方式
 
 进入 Worker 目录：
 
@@ -420,7 +475,7 @@ customer_service:task_queue
 BRPOP 出队 -> PROCESSING -> MCP 工具调用 -> 保存工具日志 -> 保存机器人回复/工单 -> SUCCESS 或 TRANSFERRED
 ```
 
-## 12. 大模型辅助配置
+## 13. 大模型辅助配置
 
 大模型配置是可选项。复制 `.env.example` 为 `.env`：
 
@@ -455,7 +510,7 @@ LLM_TIMEOUT_SECONDS=20
 
 `search_knowledge_base` 仍使用本地 JSON 知识库，保证结果可解释、可复现。
 
-## 13. MCP 工具本地测试
+## 14. MCP 工具本地测试
 
 在 `mcp_server` 目录且已激活该目录虚拟环境后执行：
 
@@ -483,7 +538,7 @@ need_transfer
 True
 ```
 
-## 14. 任务处理联调验证
+## 15. 任务处理联调验证
 
 启动 Redis、后端和 Worker 后，创建会话并发送消息：
 
@@ -547,7 +602,7 @@ curl http://127.0.0.1:8000/api/admin/middleware-status
 
 当前验收结果：Redis 队列最终长度为 `0`，SQLite 能保存任务、聊天消息、工单和 MCP 工具调用日志；前端聊天页能展示智能客服回复，后台页能展示 Redis、Worker、MCP、SQLite 等中间件说明和实时状态。
 
-## 15. 前端运行方式
+## 16. 前端运行方式
 
 进入前端目录：
 
@@ -598,7 +653,7 @@ http://127.0.0.1:8000/api
 npm run build
 ```
 
-## 16. 关键配置
+## 17. 关键配置
 
 配置示例见：
 
@@ -625,7 +680,7 @@ LLM_MODEL=qwen-plus
 LLM_TIMEOUT_SECONDS=20
 ```
 
-## 17. 中间件技术亮点
+## 18. 中间件技术亮点
 
 本项目重点展示：
 
@@ -643,9 +698,9 @@ LLM_TIMEOUT_SECONDS=20
 用户提问 -> 后端创建任务 -> Redis 入队 -> Worker 出队 -> MCP 工具处理 -> 数据库保存 -> Redis 更新状态 -> 前端展示回复
 ```
 
-## 18. 常见问题
+## 19. 常见问题
 
-### 18.1 redis-cli 命令找不到
+### 19.1 redis-cli 命令找不到
 
 Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `redis-cli`。也可以使用完整路径：
 
@@ -653,7 +708,7 @@ Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `re
 & "C:\Program Files\Redis\redis-cli.exe" ping
 ```
 
-### 18.2 创建会话时报 Redis 连接失败
+### 19.2 创建会话时报 Redis 连接失败
 
 确认 Redis 服务是否运行：
 
@@ -667,7 +722,7 @@ Get-Service Redis
 Start-Service Redis
 ```
 
-### 18.3 任务一直是 PENDING
+### 19.3 任务一直是 PENDING
 
 通常表示 Worker 没有启动，或 Worker 没有连接到同一个 Redis 和 SQLite 数据库。正常情况下任务状态会按以下流程变化：
 
@@ -675,11 +730,11 @@ Start-Service Redis
 PENDING -> PROCESSING -> SUCCESS / FAILED / TRANSFERRED
 ```
 
-### 18.4 是否必须配置真实大模型 API
+### 19.4 是否必须配置真实大模型 API
 
 不是必须。默认 `LLM_ENABLE=false`，系统使用规则和模板实现。如果配置了 OpenAI 兼容接口，MCP 工具会使用大模型辅助问题归因、转人工判断和智能回复；如果调用失败，会自动回退到规则和模板。
 
-### 18.5 前端页面打不开
+### 19.5 前端页面打不开
 
 确认前端开发服务器是否启动：
 
@@ -694,13 +749,13 @@ npm run dev
 http://127.0.0.1:5173
 ```
 
-## 19. 三人分工建议
+## 20. 三人分工建议
 
 - 成员 A：后端、数据库、API、Redis 入队；
 - 成员 B：MCP Server、Worker、Redis 出队、工具调用日志；
 - 成员 C：Vue 前端、演示页面、README 与实验报告整理。
 
-## 20. 课堂演示建议
+## 21. 课堂演示建议
 
 推荐演示顺序：
 
@@ -721,7 +776,7 @@ http://127.0.0.1:5173
 - MCP 工具调用日志详情；
 - SQLite 统计结果。
 
-## 21. 答辩问题要点
+## 22. 答辩问题要点
 
 为什么使用 Redis List 而不是 Kafka：
 

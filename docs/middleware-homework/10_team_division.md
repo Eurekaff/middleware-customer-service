@@ -154,6 +154,7 @@
 - 根目录 `README.md`；
 - `docs/middleware-homework/` 下的课程设计文档；
 - `.env.example` 配置示例；
+- `scripts/` 一键配置、启动和停止脚本；
 - `docker-compose.yml` 中的 Redis 服务；
 - 前端聊天页和后台演示页截图；
 - 实验报告正文或报告初稿；
