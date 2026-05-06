@@ -112,7 +112,7 @@ pip install -r requirements.txt
 python worker.py
 ```
 
-Worker 启动后会阻塞等待 Redis 队列中的任务。
+Worker 启动后会阻塞等待 Redis 队列中的任务。收到任务后会使用 `BRPOP` 出队，调用 MCP 工具，保存工具调用日志、机器人回复或工单，并更新任务状态。
 
 ## 6. 前端启动方式
 
@@ -160,6 +160,8 @@ http://localhost:5173
 8. 进入后台演示页查看任务列表；
 9. 查看 MCP 工具调用日志；
 10. 说明 Redis 队列、状态缓存、Worker 异步处理和 SQLite 持久化的作用。
+
+当前后端和 Worker 已可通过 API 联调。未启动前端时，可以使用 curl 创建会话、发送消息，再通过 `/api/tasks/{task_id}` 和 `/api/admin/tool-logs` 验证处理结果。
 
 ## 9. 测试样例
 

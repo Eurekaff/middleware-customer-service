@@ -1,6 +1,10 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -19,9 +23,22 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file="../.env", env_file_encoding="utf-8", extra="ignore")
 
 
+def _normalize_sqlite_url(database_url: str) -> str:
+    prefix = "sqlite:///"
+    if not database_url.startswith(prefix):
+        return database_url
+
+    db_path = database_url[len(prefix) :]
+    if db_path.startswith("/") or ":" in Path(db_path).drive:
+        return database_url
+    return f"{prefix}{(BACKEND_DIR / db_path).as_posix()}"
+
+
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    loaded = Settings()
+    loaded.database_url = _normalize_sqlite_url(loaded.database_url)
+    return loaded
 
 
 settings = get_settings()

@@ -2,7 +2,7 @@
 
 本项目是中间件技术课程大作业，目标是实现一个本地可运行的智能客服工作流系统，用于展示 Redis、Worker、MCP Server、SQLite 和前后端分离 Web 应用在客服任务处理链路中的作用。
 
-当前项目处于阶段开发中：文档、项目骨架、后端基础 API 和 MCP 工具已完成；Worker 和 Vue 前端将在后续阶段继续实现。
+当前项目处于阶段开发中：文档、项目骨架、后端基础 API、MCP 工具和 Worker 已完成；Vue 前端将在后续阶段继续实现。
 
 ## 1. 技术栈
 
@@ -69,15 +69,16 @@ middleware-customer-service/
 - 后台任务列表和工具日志 API；
 - MCP Server 入口；
 - MCP 工具规则实现；
-- MCP 工具可选大模型辅助判断和回复。
+- MCP 工具可选大模型辅助判断和回复；
+- Worker 使用 Redis `BRPOP` 消费任务；
+- Worker 调用 MCP 工具并写入工具日志；
+- Worker 写入机器人回复、工单和任务结果；
+- Worker 更新 Redis 任务状态。
 
 待实现：
 
-- Worker 消费 Redis 队列；
-- MCP 工具调用日志写入；
-- 机器人回复入库；
 - Vue 前端页面；
-- 完整联调。
+- 前端完整联调。
 
 ## 4. 环境要求
 
@@ -308,14 +309,15 @@ PENDING
 
 ## 9. 当前完整启动顺序
 
-当前阶段可以启动 Redis、后端和 MCP Server：
+当前阶段可以启动 Redis、后端、MCP Server 和 Worker：
 
 1. 启动 Redis；
 2. 启动后端；
 3. 启动 MCP Server；
-4. 调用 API 创建会话；
-5. 调用 API 发送消息；
-6. 使用 Redis CLI 验证任务入队。
+4. 启动 Worker；
+5. 调用 API 创建会话；
+6. 调用 API 发送消息；
+7. 使用任务查询 API 验证状态变为 `SUCCESS` 或 `TRANSFERRED`。
 
 后续完整项目启动顺序会扩展为：
 
@@ -359,7 +361,7 @@ python server.py
 
 当前 MCP 工具采用“规则兜底 + 可选大模型增强”模式。未配置大模型时，系统使用本地规则和模板，保证课堂演示稳定可运行；配置 OpenAI 兼容接口后，问题分类、转人工判断和客服回复会优先由大模型辅助完成。
 
-后续 Worker 可以先直接复用 `mcp_server/tools/customer_service_tools.py` 中的本地函数，也可以替换为标准 MCP Client 调用。
+当前 Worker 直接复用 `mcp_server/tools/customer_service_tools.py` 中的本地函数以保证课程演示链路稳定。后续可以替换为标准 MCP Client 调用。
 
 已实现工具：
 
@@ -369,7 +371,51 @@ python server.py
 - `create_ticket`
 - `transfer_to_human`
 
-## 11. 大模型辅助配置
+## 11. Worker 运行方式
+
+进入 Worker 目录：
+
+```powershell
+cd worker
+```
+
+创建虚拟环境：
+
+```powershell
+python -m venv .venv
+```
+
+激活虚拟环境：
+
+```powershell
+.\.venv\Scripts\activate
+```
+
+安装依赖：
+
+```powershell
+pip install -r requirements.txt
+```
+
+启动 Worker：
+
+```powershell
+python worker.py
+```
+
+Worker 会阻塞等待 Redis List 中的任务：
+
+```text
+customer_service:task_queue
+```
+
+收到任务后，Worker 会执行：
+
+```text
+BRPOP 出队 -> PROCESSING -> MCP 工具调用 -> 保存工具日志 -> 保存机器人回复/工单 -> SUCCESS 或 TRANSFERRED
+```
+
+## 12. 大模型辅助配置
 
 大模型配置是可选项。复制 `.env.example` 为 `.env`：
 
@@ -403,7 +449,7 @@ LLM_TIMEOUT_SECONDS=20
 
 `search_knowledge_base` 仍使用本地 JSON 知识库，保证结果可解释、可复现。
 
-## 12. MCP 工具本地测试
+## 13. MCP 工具本地测试
 
 在 `mcp_server` 目录且已激活该目录虚拟环境后执行：
 
@@ -431,7 +477,49 @@ need_transfer
 True
 ```
 
-## 13. 关键配置
+## 14. 任务处理联调验证
+
+启动 Redis、后端和 Worker 后，创建会话并发送消息：
+
+```powershell
+curl -X POST http://127.0.0.1:8000/api/sessions `
+  -H "Content-Type: application/json" `
+  -d "{\"title\":\"Worker联调会话\"}"
+```
+
+```powershell
+curl -X POST http://127.0.0.1:8000/api/sessions/1/messages `
+  -H "Content-Type: application/json" `
+  -d "{\"content\":\"我想退款，怎么处理？\"}"
+```
+
+查询任务状态：
+
+```powershell
+curl http://127.0.0.1:8000/api/tasks/{task_id}
+```
+
+预期状态为 `SUCCESS`。如果问题需要人工处理，预期状态为 `TRANSFERRED`。
+
+查询工具调用日志：
+
+```powershell
+curl http://127.0.0.1:8000/api/admin/tool-logs
+```
+
+验证 Redis 队列已被消费：
+
+```powershell
+& "C:\Program Files\Redis\redis-cli.exe" LLEN customer_service:task_queue
+```
+
+预期结果：
+
+```text
+0
+```
+
+## 15. 关键配置
 
 配置示例见：
 
@@ -458,7 +546,7 @@ LLM_MODEL=
 LLM_TIMEOUT_SECONDS=20
 ```
 
-## 14. 中间件技术亮点
+## 16. 中间件技术亮点
 
 本项目重点展示：
 
@@ -476,9 +564,9 @@ LLM_TIMEOUT_SECONDS=20
 用户提问 -> 后端创建任务 -> Redis 入队 -> Worker 出队 -> MCP 工具处理 -> 数据库保存 -> Redis 更新状态 -> 前端展示回复
 ```
 
-## 15. 常见问题
+## 17. 常见问题
 
-### 15.1 redis-cli 命令找不到
+### 17.1 redis-cli 命令找不到
 
 Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `redis-cli`。也可以使用完整路径：
 
@@ -486,7 +574,7 @@ Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `re
 & "C:\Program Files\Redis\redis-cli.exe" ping
 ```
 
-### 15.2 创建会话时报 Redis 连接失败
+### 17.2 创建会话时报 Redis 连接失败
 
 确认 Redis 服务是否运行：
 
@@ -500,19 +588,19 @@ Get-Service Redis
 Start-Service Redis
 ```
 
-### 15.3 任务一直是 PENDING
+### 17.3 任务一直是 PENDING
 
-当前阶段 Worker 尚未实现，任务只会入队，不会被消费。实现 Worker 后，任务状态会按以下流程变化：
+通常表示 Worker 没有启动，或 Worker 没有连接到同一个 Redis 和 SQLite 数据库。正常情况下任务状态会按以下流程变化：
 
 ```text
 PENDING -> PROCESSING -> SUCCESS / FAILED / TRANSFERRED
 ```
 
-### 15.4 是否必须配置真实大模型 API
+### 17.4 是否必须配置真实大模型 API
 
 不是必须。默认 `LLM_ENABLE=false`，系统使用规则和模板实现。如果配置了 OpenAI 兼容接口，MCP 工具会使用大模型辅助问题归因、转人工判断和智能回复；如果调用失败，会自动回退到规则和模板。
 
-## 16. 三人分工建议
+## 18. 三人分工建议
 
 - 成员 A：后端、数据库、API、Redis 入队；
 - 成员 B：MCP Server、Worker、Redis 出队、工具调用日志；
