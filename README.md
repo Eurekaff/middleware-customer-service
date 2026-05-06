@@ -2,7 +2,7 @@
 
 本项目是中间件技术课程大作业，目标是实现一个本地可运行的智能客服工作流系统，用于展示 Redis、Worker、MCP Server、SQLite 和前后端分离 Web 应用在客服任务处理链路中的作用。
 
-当前项目处于阶段开发中：文档、项目骨架、后端基础 API、MCP 工具、Worker 和 Vue 前端已完成；后续阶段将继续做完整本地验收和实验报告材料补充。
+项目已完成本地联调和课程验收演示链路。当前版本支持用户提问、后端创建任务、Redis 入队、Worker 异步消费、MCP 工具处理、SQLite 持久化、Redis 状态更新和前端展示最终回复。
 
 ## 1. 技术栈
 
@@ -81,10 +81,11 @@ middleware-customer-service/
 - 后台演示页展示 Redis 队列、Redis 缓存、Worker、MCP、SQLite 和前后端轮询的中间件说明；
 - 后台演示页通过 `/api/admin/middleware-status` 展示 Redis 与 SQLite 实时状态。
 
-待实现：
+建议补充材料：
 
-- 最终 README 和实验报告材料整理；
-- 完整截图和答辩材料。
+- 课堂演示截图；
+- 答辩 PPT；
+- 实验报告正文排版。
 
 ## 4. 环境要求
 
@@ -266,24 +267,32 @@ curl -X POST http://127.0.0.1:8000/api/sessions/1/messages `
 curl http://127.0.0.1:8000/api/tasks/{task_id}
 ```
 
-当前阶段 Worker 尚未实现，因此任务会停留在：
+在 Worker 正常运行时，任务会从 `PENDING` 进入 `PROCESSING`，最终变为：
 
 ```text
-PENDING
+SUCCESS / FAILED / TRANSFERRED
 ```
+
+其中 `SUCCESS` 表示智能客服已生成回复，`TRANSFERRED` 表示系统判断需要人工处理并创建工单，`FAILED` 表示 Worker 处理异常。
 
 ## 8. Redis 队列验证
 
-发送消息后，可以检查 Redis 队列长度：
+发送消息后，可以检查 Redis 队列长度。若 Worker 尚未消费，队列长度会增加；若 Worker 已处理完成，队列长度通常会回到 `0`：
 
 ```powershell
 & "C:\Program Files\Redis\redis-cli.exe" LLEN customer_service:task_queue
 ```
 
-预期结果：
+未启动 Worker 时的预期结果：
 
 ```text
 1
+```
+
+Worker 正常运行并消费完成后的预期结果：
+
+```text
+0
 ```
 
 查看任务状态 Hash：
@@ -314,16 +323,6 @@ PENDING
 ```
 
 ## 9. 当前完整启动顺序
-
-当前阶段可以启动 Redis、后端、MCP Server 和 Worker：
-
-1. 启动 Redis；
-2. 启动后端；
-3. 启动 MCP Server；
-4. 启动 Worker；
-5. 启动前端；
-6. 在页面创建会话并发送消息；
-7. 使用任务状态面板和后台演示页验证结果。
 
 完整项目启动顺序：
 
@@ -514,6 +513,14 @@ curl http://127.0.0.1:8000/api/tasks/{task_id}
 curl http://127.0.0.1:8000/api/admin/tool-logs
 ```
 
+查询后台中间件状态：
+
+```powershell
+curl http://127.0.0.1:8000/api/admin/middleware-status
+```
+
+该接口用于后台演示页，返回 Redis 连接状态、队列长度、任务缓存 key、会话缓存 key 和 SQLite 数据统计。
+
 验证 Redis 队列已被消费：
 
 ```powershell
@@ -538,7 +545,7 @@ curl http://127.0.0.1:8000/api/admin/tool-logs
 | 介绍一下课程套餐 | 商品咨询 | SUCCESS | Worker 生成商品咨询回复 |
 | 11 | 无效输入 | SUCCESS | Worker 引导用户补充具体问题 |
 
-联调结果：Redis 队列最终长度为 `0`，SQLite 保存了 4 条任务、8 条聊天消息和 17 条 MCP 工具调用日志。
+当前验收结果：Redis 队列最终长度为 `0`，SQLite 能保存任务、聊天消息、工单和 MCP 工具调用日志；前端聊天页能展示智能客服回复，后台页能展示 Redis、Worker、MCP、SQLite 等中间件说明和实时状态。
 
 ## 15. 前端运行方式
 
@@ -692,3 +699,42 @@ http://127.0.0.1:5173
 - 成员 A：后端、数据库、API、Redis 入队；
 - 成员 B：MCP Server、Worker、Redis 出队、工具调用日志；
 - 成员 C：Vue 前端、演示页面、README 与实验报告整理。
+
+## 20. 课堂演示建议
+
+推荐演示顺序：
+
+1. 打开聊天页 `http://127.0.0.1:5173`；
+2. 新建会话并发送“我想退款，怎么处理？”；
+3. 观察右侧任务状态面板中的分类、知识库命中、回复和是否转人工；
+4. 打开后台页 `http://127.0.0.1:5173/admin`；
+5. 说明 Redis List 队列、Redis Hash 状态缓存、Worker 异步消费、MCP 工具调用和 SQLite 持久化；
+6. 展示任务列表和 MCP 工具调用日志；
+7. 再发送“我已经反馈三次了，没人处理，我要人工客服。”，展示 `TRANSFERRED` 状态和工单创建逻辑。
+
+建议截图：
+
+- 聊天页完整三栏布局；
+- 任务状态面板；
+- 后台中间件说明卡片；
+- Redis 实时状态面板；
+- MCP 工具调用日志详情；
+- SQLite 统计结果。
+
+## 21. 答辩问题要点
+
+为什么使用 Redis List 而不是 Kafka：
+
+Redis 安装简单、本地运行成本低，`LPUSH` 和 `BRPOP` 已能满足本课程项目的轻量异步队列需求；Kafka 更适合高吞吐日志流和消费者组场景，本项目不需要引入额外复杂度。
+
+为什么需要 Worker：
+
+智能客服处理包含分类、检索、生成回复和工单判断，可能耗时。后端请求只负责保存消息和创建任务，Worker 后台异步处理，能体现请求处理与任务处理解耦。
+
+MCP Server 的作用是什么：
+
+MCP Server 把 AI 相关能力封装为标准工具，包括问题分类、知识库检索、回复生成、转人工判断和工单创建。当前 Worker 为保证课堂演示稳定，直接复用工具函数；后续可以替换为标准 MCP Client 调用。
+
+Redis 和 SQLite 的边界是什么：
+
+Redis 保存队列和最近状态，适合快速读写和任务流转；SQLite 保存会话、消息、任务、工具调用日志和工单，是最终事实记录。

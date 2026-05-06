@@ -16,6 +16,7 @@
 | GET | `/api/tasks/{task_id}` | 查询任务状态和结果 |
 | GET | `/api/admin/tasks` | 查询任务列表 |
 | GET | `/api/admin/tool-logs` | 查询 MCP 工具调用日志 |
+| GET | `/api/admin/middleware-status` | 查询 Redis、SQLite 和工作流演示状态 |
 
 ## 2. GET /api/health
 
@@ -301,3 +302,52 @@ curl http://localhost:8000/api/admin/tool-logs
   }
 ]
 ```
+
+## 12. GET /api/admin/middleware-status
+
+### 12.1 说明
+
+查询后台演示页所需的中间件状态。该接口用于课堂展示 Redis 队列、Redis 状态缓存、SQLite 持久化统计和整体工作流。
+
+### 12.2 示例请求
+
+```bash
+curl http://localhost:8000/api/admin/middleware-status
+```
+
+### 12.3 示例响应
+
+```json
+{
+  "redis": {
+    "connected": true,
+    "error": "",
+    "queue_name": "customer_service:task_queue",
+    "queue_length": 0,
+    "queue_preview": [],
+    "task_cache_keys": [
+      "customer_service:task:9a64b2f4-32f0-4f43-89cb-b3a6e2e7c001"
+    ],
+    "session_cache_keys": [
+      "customer_service:session:1"
+    ]
+  },
+  "sqlite": {
+    "sessions": 1,
+    "messages": 2,
+    "tasks": 1,
+    "tool_logs": 4,
+    "tickets": 0
+  },
+  "workflow": [
+    "FastAPI 保存用户消息并创建 PENDING 任务",
+    "Redis List 保存待处理任务",
+    "Worker 使用 BRPOP 阻塞消费任务",
+    "Worker 调用 MCP 工具完成分类、检索、回复和转人工判断",
+    "SQLite 持久化消息、任务、工单和工具调用日志",
+    "Redis Hash 缓存任务状态，前端轮询展示处理结果"
+  ]
+}
+```
+
+该接口只用于演示和调试，不参与用户发送消息的核心处理链路。
