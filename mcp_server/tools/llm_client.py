@@ -11,6 +11,9 @@ from openai import OpenAI
 ROOT_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT_DIR / ".env")
 
+DEFAULT_LLM_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+DEFAULT_LLM_MODEL = "qwen-plus"
+
 
 @dataclass
 class LLMResult:
@@ -23,8 +26,8 @@ class LLMClient:
     def __init__(self) -> None:
         self.enabled = _is_truthy(os.getenv("LLM_ENABLE", "false"))
         self.api_key = os.getenv("LLM_API_KEY", "")
-        self.base_url = os.getenv("LLM_BASE_URL") or None
-        self.model = os.getenv("LLM_MODEL", "")
+        self.base_url = os.getenv("LLM_BASE_URL") or DEFAULT_LLM_BASE_URL
+        self.model = os.getenv("LLM_MODEL") or DEFAULT_LLM_MODEL
         self.timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "20"))
         if not self.api_key or not self.model:
             self.enabled = False

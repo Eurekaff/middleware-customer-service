@@ -183,17 +183,18 @@ MCP Server 支持 OpenAI 兼容接口，配置项如下：
 ```text
 LLM_ENABLE=false
 LLM_API_KEY=
-LLM_BASE_URL=
-LLM_MODEL=
+LLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+LLM_MODEL=qwen-plus
 LLM_TIMEOUT_SECONDS=20
 ```
 
 说明：
 
 1. `LLM_ENABLE=false` 时，系统完全使用规则和模板；
-2. `LLM_ENABLE=true` 但缺少 API Key 或模型名时，系统自动回退规则和模板；
-3. 大模型调用失败时，工具返回规则结果，并附带 `llm_error`；
-4. 工具输出包含 `llm_used` 和 `fallback_used` 字段，便于 Worker 后续记录工具调用日志；
-5. 不提交真实 API Key，实际密钥只写入本地 `.env`。
+2. 默认大模型为阿里云百炼通义千问，使用 OpenAI 兼容接口和 `qwen-plus` 模型；
+3. `LLM_ENABLE=true` 但缺少 API Key 时，系统自动回退规则和模板；
+4. 大模型调用失败时，工具返回规则结果，并附带 `llm_error`；
+5. 工具输出包含 `llm_used` 和 `fallback_used` 字段，便于 Worker 后续记录工具调用日志；
+6. 不提交真实 API Key，实际密钥只写入本地 `.env`。
 
 这种设计既可以体现大模型辅助客服判断和回复生成，也能保证本地演示链路不依赖外部服务。
