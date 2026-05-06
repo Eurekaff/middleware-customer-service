@@ -68,7 +68,8 @@ middleware-customer-service/
 - 任务状态查询；
 - 后台任务列表和工具日志 API；
 - MCP Server 入口；
-- MCP 工具规则实现。
+- MCP 工具规则实现；
+- MCP 工具可选大模型辅助判断和回复。
 
 待实现：
 
@@ -356,7 +357,9 @@ pip install -r requirements.txt
 python server.py
 ```
 
-当前 MCP 工具使用规则和模板实现，不依赖真实大模型 API。后续 Worker 可以先直接复用 `mcp_server/tools/customer_service_tools.py` 中的本地函数，也可以替换为标准 MCP Client 调用。
+当前 MCP 工具采用“规则兜底 + 可选大模型增强”模式。未配置大模型时，系统使用本地规则和模板，保证课堂演示稳定可运行；配置 OpenAI 兼容接口后，问题分类、转人工判断和客服回复会优先由大模型辅助完成。
+
+后续 Worker 可以先直接复用 `mcp_server/tools/customer_service_tools.py` 中的本地函数，也可以替换为标准 MCP Client 调用。
 
 已实现工具：
 
@@ -366,12 +369,46 @@ python server.py
 - `create_ticket`
 - `transfer_to_human`
 
-## 11. MCP 工具本地测试
+## 11. 大模型辅助配置
 
-在项目根目录执行：
+大模型配置是可选项。复制 `.env.example` 为 `.env`：
 
 ```powershell
-python -c "from mcp_server.tools.customer_service_tools import classify_question_tool; print(classify_question_tool('我想退款，怎么处理？'))"
+copy .env.example .env
+```
+
+在 `.env` 中填写：
+
+```env
+LLM_ENABLE=true
+LLM_API_KEY=你的 API Key
+LLM_BASE_URL=https://你的 OpenAI 兼容接口地址/v1
+LLM_MODEL=你的模型名称
+LLM_TIMEOUT_SECONDS=20
+```
+
+说明：
+
+- `LLM_ENABLE=false` 时完全使用本地规则和模板；
+- `LLM_ENABLE=true` 但 `LLM_API_KEY` 或 `LLM_MODEL` 为空时，会自动回退到本地规则；
+- `LLM_BASE_URL` 为空时使用 OpenAI SDK 默认地址；
+- 支持 DeepSeek、通义千问、智谱等提供 OpenAI 兼容接口的模型服务；
+- 不要把真实 API Key 提交到仓库。
+
+大模型当前参与三个工具：
+
+- `classify_question`：规则先给初步分类，大模型从固定分类枚举中二次判断；
+- `transfer_to_human`：规则先判断，大模型辅助确认是否转人工；
+- `generate_reply`：结合用户问题、分类和知识库命中生成更自然的客服回复。
+
+`search_knowledge_base` 仍使用本地 JSON 知识库，保证结果可解释、可复现。
+
+## 12. MCP 工具本地测试
+
+在 `mcp_server` 目录且已激活该目录虚拟环境后执行：
+
+```powershell
+python -c "from tools.customer_service_tools import classify_question_tool; print(classify_question_tool('我想退款，怎么处理？'))"
 ```
 
 预期输出包含：
@@ -383,7 +420,7 @@ python -c "from mcp_server.tools.customer_service_tools import classify_question
 测试转人工判断：
 
 ```powershell
-python -c "from mcp_server.tools.customer_service_tools import classify_question_tool, transfer_to_human_tool; q='我已经反馈三次了，没人处理，我要人工客服。'; c=classify_question_tool(q)['category']; print(c, transfer_to_human_tool(q, c))"
+python -c "from tools.customer_service_tools import classify_question_tool, transfer_to_human_tool; q='我已经反馈三次了，没人处理，我要人工客服。'; c=classify_question_tool(q)['category']; print(c, transfer_to_human_tool(q, c))"
 ```
 
 预期输出包含：
@@ -394,7 +431,7 @@ need_transfer
 True
 ```
 
-## 12. 关键配置
+## 13. 关键配置
 
 配置示例见：
 
@@ -414,9 +451,14 @@ REDIS_DB=0
 REDIS_TASK_QUEUE=customer_service:task_queue
 REDIS_KEY_PREFIX=customer_service
 VITE_API_BASE_URL=http://127.0.0.1:8000/api
+LLM_ENABLE=false
+LLM_API_KEY=
+LLM_BASE_URL=
+LLM_MODEL=
+LLM_TIMEOUT_SECONDS=20
 ```
 
-## 13. 中间件技术亮点
+## 14. 中间件技术亮点
 
 本项目重点展示：
 
@@ -434,9 +476,9 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api
 用户提问 -> 后端创建任务 -> Redis 入队 -> Worker 出队 -> MCP 工具处理 -> 数据库保存 -> Redis 更新状态 -> 前端展示回复
 ```
 
-## 14. 常见问题
+## 15. 常见问题
 
-### 12.1 redis-cli 命令找不到
+### 15.1 redis-cli 命令找不到
 
 Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `redis-cli`。也可以使用完整路径：
 
@@ -444,7 +486,7 @@ Windows winget 安装 Redis 后，可能需要重启终端才能直接使用 `re
 & "C:\Program Files\Redis\redis-cli.exe" ping
 ```
 
-### 12.2 创建会话时报 Redis 连接失败
+### 15.2 创建会话时报 Redis 连接失败
 
 确认 Redis 服务是否运行：
 
@@ -458,7 +500,7 @@ Get-Service Redis
 Start-Service Redis
 ```
 
-### 12.3 任务一直是 PENDING
+### 15.3 任务一直是 PENDING
 
 当前阶段 Worker 尚未实现，任务只会入队，不会被消费。实现 Worker 后，任务状态会按以下流程变化：
 
@@ -466,11 +508,11 @@ Start-Service Redis
 PENDING -> PROCESSING -> SUCCESS / FAILED / TRANSFERRED
 ```
 
-### 12.4 是否需要真实大模型 API
+### 15.4 是否必须配置真实大模型 API
 
-当前不需要。MCP 工具会先使用规则和模板实现，保证课程演示链路稳定可运行。
+不是必须。默认 `LLM_ENABLE=false`，系统使用规则和模板实现。如果配置了 OpenAI 兼容接口，MCP 工具会使用大模型辅助问题归因、转人工判断和智能回复；如果调用失败，会自动回退到规则和模板。
 
-## 15. 三人分工建议
+## 16. 三人分工建议
 
 - 成员 A：后端、数据库、API、Redis 入队；
 - 成员 B：MCP Server、Worker、Redis 出队、工具调用日志；

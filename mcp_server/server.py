@@ -1,12 +1,21 @@
 from mcp.server.fastmcp import FastMCP
 
-from tools.customer_service_tools import (
-    classify_question_tool,
-    create_ticket_tool,
-    generate_reply_tool,
-    search_knowledge_base_tool,
-    transfer_to_human_tool,
-)
+try:
+    from tools.customer_service_tools import (
+        classify_question_tool,
+        create_ticket_tool,
+        generate_reply_tool,
+        search_knowledge_base_tool,
+        transfer_to_human_tool,
+    )
+except ModuleNotFoundError:
+    from mcp_server.tools.customer_service_tools import (
+        classify_question_tool,
+        create_ticket_tool,
+        generate_reply_tool,
+        search_knowledge_base_tool,
+        transfer_to_human_tool,
+    )
 
 mcp = FastMCP("middleware-customer-service-mcp")
 
